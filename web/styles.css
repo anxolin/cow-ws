@@ -1,0 +1,54 @@
+body {
+  font-family: sans-serif;
+  
+}
+
+#cow-container {
+  max-width: 50em;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.item {
+  border-top: 1px solid;
+  border-bottom: 1px solid;
+  position: relative;
+  height: 120px;
+}
+
+.cow {
+  width: 100px;
+  height: 85px;
+  position: absolute;
+  animation-name: skate;
+  animation-duration: 30s; /* TODO: Inject: time elpapsed */
+  animation-timing-function: linear;
+  background-image: url("./cow.jpg");
+  bottom: 0px;
+  right: 0%;
+}
+
+/* TODO: Add expired className when time is over */
+.cow.expired {
+  animation-duration: 0.3s;
+  animation-timing-function: linear;
+  animation-name: backflip;
+}
+
+@keyframes skate {
+  0% {
+    right: 100%;
+  }
+  100% {
+    right: 0%; /* TODO: Inject: Percentage */
+  }
+}
+
+@keyframes backflip {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(-450deg);
+  }
+}
