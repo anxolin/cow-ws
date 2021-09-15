@@ -35,4 +35,5 @@ function emitEvents () {
   io.emit('NEW_ORDER', order)
 }
 
-setInterval(emitEvents, 5000)
+emitEvents()
+setInterval(emitEvents, 2000)
