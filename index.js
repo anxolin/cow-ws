@@ -23,7 +23,7 @@ server.listen(3000, () => {
   console.log('🐮🛹 Listening on *:3000')
 })
 
-function emitEvents () {
+function emitEvent () {
   const order = {
     uuid: '0x3e7b0819ee99a311ab1ad47844057237c80568013065bcc03e972bc1b70eaad7424a46612794dbb8000194937834250dc723ffa56091050b',
     price: '3010',
@@ -35,5 +35,13 @@ function emitEvents () {
   io.emit('NEW_ORDER', order)
 }
 
-emitEvents()
-setInterval(emitEvents, 2000)
+function emitRandom () {
+  const delay = Math.floor(Math.random() * 3000)
+  setTimeout(() => {
+    emitEvent()
+    emitRandom()
+  }, delay)
+}
+
+emitEvent()
+emitRandom()
