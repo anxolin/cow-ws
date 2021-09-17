@@ -10,6 +10,8 @@ const order = require('./data/order.json')
 
 const IS_MOCK = process.env.MOCK === 'true'
 const LOAD_ORDERS_WAIT_MS = 2000
+// const WAITING_FOR_COW_TIME = 30000
+const WAITING_FOR_COW_TIME = 5000
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '/web/index.html'))
@@ -29,12 +31,12 @@ server.listen(3000, () => {
 })
 
 function emitMockOrder () {
-  // const cowTime = Math.floor(Math.random() * 30000)
+  const cowTime = Math.floor(Math.random() * WAITING_FOR_COW_TIME)
 
   const newOrder = {
     ...order,
-    // creationDate: new Date(new Date().getTime() - cowTime).toISOString()
-    creationDate: new Date(new Date().getTime() - 1000).toISOString()
+    creationDate: new Date(new Date().getTime() - cowTime).toISOString()
+    // creationDate: new Date(new Date().getTime() - 1000).toISOString()
   }
   const { uid, kind, creationDate, sellToken, buyToken, sellAmount, buyAmount } = newOrder
   console.log('🤑 Push Order', { uid, kind, creationDate, sellToken, buyToken, sellAmount, buyAmount })
@@ -43,7 +45,7 @@ function emitMockOrder () {
 
 function emitRandomMockOrder () {
   emitMockOrder()
-  const delayMs = Math.floor(Math.random() * 20000)
+  const delayMs = Math.floor(Math.random() * WAITING_FOR_COW_TIME * 0.70)
   setTimeout(() => {
     emitRandomMockOrder()
   }, delayMs)

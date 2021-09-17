@@ -1,5 +1,6 @@
 console.log('🐮🛹 C O W    S K A T E')
-const WAITING_FOR_COW_TIME = 30000
+// const WAITING_FOR_COW_TIME = 30000
+const WAITING_FOR_COW_TIME = 5000
 
 // eslint-disable-next-line no-undef
 const socket = io()
