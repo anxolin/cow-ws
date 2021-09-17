@@ -6,7 +6,9 @@ const WAITING_FOR_COW_TIME = 30000
 const socket = io()
 window.socket = socket
 
-const cowsDiv = document.getElementById('cow-container')
+let numOrders = 0
+
+const widgetDiv = document.getElementById('cowWidget')
 
 function delay (ms) {
   return new Promise(resolve => setTimeout(() => resolve(), ms))
@@ -18,7 +20,23 @@ function getCowTimeMs (order) {
   return cowTimeMs >= 0 ? cowTimeMs : 0
 }
 
+function showNoOrdersText () {
+  if (numOrders === 0) {
+    widgetDiv.innerHTML = '<div class="noOrdersText">No CoW orders right now.</div>'
+  }
+}
+
+function resetIfNoOrders () {
+  if (numOrders === 0) {
+    widgetDiv.innerHTML = ''
+  }
+}
+
 async function createNewOrder (order) {
+  // If theres no orders. Empty message
+  resetIfNoOrders()
+  numOrders++
+
   let cowTime = getCowTimeMs(order)
   console.log('cowTime', cowTime)
 
@@ -71,8 +89,7 @@ async function createNewOrder (order) {
   skateableDiv.appendChild(cowDiv)
   rowDiv.appendChild(skateableDiv)
   rowDiv.appendChild(tradeButton)
-  // cowsDiv.insertBefore(rowDiv, cowsDiv.firstChild)
-  cowsDiv.appendChild(rowDiv)
+  widgetDiv.appendChild(rowDiv)
 
   tradeButton.addEventListener('click', () => {
     alert('Trade order ' + JSON.stringify(order.uid))
@@ -86,7 +103,13 @@ async function createNewOrder (order) {
   await delay(1000)
   rowDiv.remove() // destroy item
   clearInterval(interval)
+
+  // If there's no more orders left, we show a message
+  numOrders--
+  showNoOrdersText()
 }
+
+showNoOrdersText()
 
 // let count = 0
 socket.on('NEW_ORDER', function (order) {

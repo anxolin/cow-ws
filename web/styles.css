@@ -3,9 +3,21 @@ body {
   
 }
 
-#cow-container {
+h1 {
+  text-align: center;
+}
+
+h1 em {
+  font-size: 0.6em;
+}
+
+#cowWidget {
   max-width: 50em;
   margin: 0 auto;
+}
+
+.noOrdersText {
+  text-align: center;
 }
 
 .row {
