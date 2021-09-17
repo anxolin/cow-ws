@@ -80,7 +80,6 @@ async function pushNewOrders () {
       // No need to keep the orders linger than their expiration date
       const expirationDate = new Date(order.validTo * 1000)
       const timeUntilExpiration = expirationDate.getTime() - Date.now()
-      console.log('Time for expiration', expirationDate, timeUntilExpiration)
       setTimeout(() => {
         // Remove expired orders from UID cache
         console.log('⏱ Order Expired: Removing it from UID cache', order.uid)
