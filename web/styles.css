@@ -21,14 +21,14 @@ body {
   height: 85px;
   position: absolute;
   animation-name: skate;
-  animation-duration: 5s; /* TODO: Inject: time elpapsed */
+  /* animation-duration: 5s; / * TODO: Inject: time elpapsed * / */
   animation-timing-function: linear;
   background-image: url("./cow.jpg");
   bottom: 0px;
   right: 0%;
 }
 
-/* TODO: Add expired className when time is over */
+
 .backflip .cow {
   animation-duration: 0.3s;
   animation-timing-function: linear;
@@ -39,6 +39,29 @@ body {
   bottom: -100px;
   transition: bottom 1s;
   transform: rotate(-180deg);
+}
+
+.countdown {
+  color: #FFF;
+  background-color: #FF6B6B;
+  
+  position: absolute;
+  top: -15px;
+  left: -15px;
+  width: 25px;
+  height: 25px;
+  
+  text-align: center;
+  padding: 3px;
+  display: flex;
+  justify-content: center;
+  
+  border-radius: 20px;
+  border: 2px solid #FFF;
+  font-size: 10px;
+  line-height: 20px;
+  font-weight: 400;
+  font-size: 12px;
 }
 
 

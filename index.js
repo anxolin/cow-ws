@@ -29,9 +29,12 @@ server.listen(3000, () => {
 })
 
 function emitMockOrder () {
+  // const cowTime = Math.floor(Math.random() * 30000)
+
   const newOrder = {
     ...order,
-    creationDate: new Date().toISOString()
+    // creationDate: new Date(new Date().getTime() - cowTime).toISOString()
+    creationDate: new Date(new Date().getTime() - 1000).toISOString()
   }
   const { uid, kind, creationDate, sellToken, buyToken, sellAmount, buyAmount } = newOrder
   console.log('🤑 Push Order', { uid, kind, creationDate, sellToken, buyToken, sellAmount, buyAmount })
@@ -39,9 +42,9 @@ function emitMockOrder () {
 }
 
 function emitRandomMockOrder () {
-  const delayMs = Math.floor(Math.random() * 3000)
+  emitMockOrder()
+  const delayMs = Math.floor(Math.random() * 20000)
   setTimeout(() => {
-    emitMockOrder()
     emitRandomMockOrder()
   }, delayMs)
 }
