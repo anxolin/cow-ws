@@ -1,22 +1,30 @@
 console.log('🐮🛹 C O W')
-// const WAITING_FOR_COW_TIME = 30000
-const WAITING_FOR_COW_TIME = 5000
+
+const BASE_URL = 'http://localhost:3000'
 
 // eslint-disable-next-line no-undef
 const socket = io()
 window.socket = socket
 
+// State
+let waitForCowTime
 let numOrders = 0
 
+// References
 const widgetDiv = document.getElementById('cowWidget')
 
 function delay (ms) {
   return new Promise(resolve => setTimeout(() => resolve(), ms))
 }
 
+async function getWaitForCowTime () {
+  const response = await fetch(BASE_URL + '/api/wait-for-cow-time')
+  return response.json()
+}
+
 function getRemainingCowTimeMs (order) {
   const creationDate = new Date(order.creationDate)
-  const cowTimeMs = (creationDate.getTime() - Date.now()) + WAITING_FOR_COW_TIME
+  const cowTimeMs = (creationDate.getTime() - Date.now()) + waitForCowTime
   return cowTimeMs >= 0 ? cowTimeMs : 0
 }
 
@@ -112,14 +120,23 @@ async function createNewOrder (order) {
   showNoOrdersText()
 }
 
-showNoOrdersText()
+async function init () {
+  waitForCowTime = await getWaitForCowTime()
+  console.log('Using CoW API base Url: ', BASE_URL)
+  console.log(`Orders will work ${waitForCowTime} for a CoW`)
 
-// let count = 0
-socket.on('NEW_ORDER', function (order) {
-  console.log('🤑 New order!', order)
-  // if (count === 0) {
-  //   createNewOrder(order).catch(console.error)
-  //   count++
-  // }
-  createNewOrder(order).catch(console.error)
-})
+  showNoOrdersText()
+
+  // let count = 0
+  console.log('Watch for new orders!')
+  socket.on('NEW_ORDER', function (order) {
+    console.log('🤑 New order!', order)
+    // if (count === 0) {
+    //   createNewOrder(order).catch(console.error)
+    //   count++
+    // }
+    createNewOrder(order).catch(console.error)
+  })
+}
+
+init().catch(console.error)
