@@ -64,6 +64,47 @@ body {
   font-size: 12px;
 }
 
+.trolley {
+  color: black;
+  position: absolute;
+  top: -5px;
+  left: -15em;
+  padding: 1.2em;
+  background: #c5c5c5;
+  border-radius: 0em;
+  font-weight: 800;
+  width: 10em;
+  text-align: center;
+}
+
+.trolley .wheel1, .trolley .wheel2 {
+  position: absolute;
+  bottom: -1em;
+  background-color: #5a5a5a;
+  display: block;
+  width: 30px;
+  height: 30px;
+  border-radius: 100%;
+}
+
+.trolley .wheel1{
+  left: 1em;
+}
+
+.trolley .wheel2 {
+  right: 1em;
+}
+
+.trolley .towbar {
+  position: absolute;
+  bottom: 0;
+  left: 197px;
+  background-color: #5a5a5a;
+  display: block;
+  width: 46px;
+  height: 7px;
+}
+
 
 
 @keyframes skate {
