@@ -41,6 +41,7 @@ function resetIfNoOrders () {
 }
 
 function createRowDiv (order, remainingCowTime) {
+  const { uid, kind, sellToken, buyToken, sellAmount, buyAmount } = order
   const rowDiv = document.createElement('div')
   rowDiv.className = 'row'
 
@@ -59,11 +60,26 @@ function createRowDiv (order, remainingCowTime) {
   countdown.innerText = Math.ceil(remainingCowTime / 1000)
 
   // Trolley
+  const isCounterOrderSell = kind !== 'sell'
+  const counterOrders = {
+    kind: isCounterOrderSell ? 'sell' : 'buy',
+    // TODO: add slippage!
+    sellAmount: buyAmount,
+    buyAmount: sellAmount,
+    sellToken,
+    buyToken,
+    // TODO: Get the token name!
+    buyTokenLabel: 'WETH',
+    sellTokenLabel: 'DAI'
+  }
+  const orderAmount = isCounterOrderSell ? counterOrders.sellAmount : counterOrders.buyAmount
+  const orderToken = isCounterOrderSell ? counterOrders.sellTokenLabel : counterOrders.buyTokenLabel
+  const price = parseInt(sellAmount) / parseInt(buyAmount)
   const trolley = document.createElement('div')
   trolley.className = 'trolley'
   trolley.innerHTML = `\
-<div class="trade">Buy 10 WETH</div>
-<div class="price">3,005 DAI per WETH</div>
+<div class="trade">${counterOrders.kind} ${orderAmount.toFixed(4)} ${orderToken}</div>
+<div class="price"><strong>${price.toFixed(4)}</strong> ${counterOrders.buyTokenLabel} per ${counterOrders.sellTokenLabel}</div>
 <div class="wheel1"></div>
 <div class="wheel2"/></div>
 <div class="towbar"/></div>`
@@ -73,7 +89,7 @@ function createRowDiv (order, remainingCowTime) {
   tradeButton.className = 'tradeButton'
   tradeButton.innerText = 'Trade NOW!'
   tradeButton.addEventListener('click', () => {
-    alert('Trade order ' + JSON.stringify(order.uid))
+    alert('Trade order ' + JSON.stringify(uid))
   })
 
   // Add elements
@@ -108,16 +124,16 @@ async function createNewOrder (order) {
 
   // Wait for animations and destroy item
   await delay(remainingCowTime) // wait for skate animation
-  rowDiv.classList.add('backflip')
-  await delay(300) // wait for backflip animation
-  rowDiv.classList.add('expired')
-  await delay(1000)
-  rowDiv.remove() // destroy item
+  // rowDiv.classList.add('backflip')
+  // await delay(300) // wait for backflip animation
+  // rowDiv.classList.add('expired')
+  // await delay(1000)
+  // rowDiv.remove() // destroy item
   clearInterval(interval)
 
   // If there's no more orders left, we show a message
-  numOrders--
-  showNoOrdersText()
+  // numOrders--
+  // showNoOrdersText()
 }
 
 async function init () {

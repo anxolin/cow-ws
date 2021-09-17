@@ -57,10 +57,16 @@ function emitOrder (order) {
 
 function emitMockOrder () {
   const cowTime = Math.floor(Math.random() * WAITING_FOR_COW_TIME)
+  const isSellOrder = Math.random() < 0.5
+  const sellAmount = Math.random() * 5000
+  const buyAmount = Math.random() * 10
 
   const newOrder = {
     ...order,
-    creationDate: new Date(new Date().getTime() - cowTime).toISOString()
+    kind: isSellOrder ? 'sell' : 'buy',
+    creationDate: new Date(new Date().getTime() - cowTime).toISOString(),
+    sellAmount,
+    buyAmount
     // creationDate: new Date(new Date().getTime() - 1000).toISOString()
   }
   emitOrder(newOrder)
