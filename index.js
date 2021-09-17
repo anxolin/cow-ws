@@ -10,8 +10,10 @@ const order = require('./data/order.json')
 
 const IS_MOCK = process.env.MOCK === 'true'
 const LOAD_ORDERS_WAIT_MS = 2000
-// const WAITING_FOR_COW_TIME = 30000
-const WAITING_FOR_COW_TIME = 5000
+const WAITING_FOR_COW_TIME = 30000
+// const WAITING_FOR_COW_TIME = 5000
+
+const knownOrders = new Set()
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '/web/index.html'))
@@ -30,6 +32,24 @@ server.listen(3000, () => {
   console.log('🐮🛹 Listening on *:3000')
 })
 
+function getCowTimeMs (order) {
+  const creationDate = new Date(order.creationDate)
+  const cowTimeMs = (creationDate.getTime() - Date.now()) + WAITING_FOR_COW_TIME
+  return cowTimeMs >= 0 ? cowTimeMs : 0
+}
+
+function emitOrder (order) {
+  const cowTimeMs = getCowTimeMs(order)
+  const { uid, kind, creationDate, sellToken, buyToken, sellAmount, buyAmount } = order
+  const orderInfo = { uid, kind, creationDate, sellToken, buyToken, sellAmount, buyAmount }
+  if (cowTimeMs > 0) {
+    console.log('🤑 Push Order', orderInfo)
+    io.emit('NEW_ORDER', order)
+  } else {
+    console.warn('⏱ Order is too old. Not pushing', orderInfo)
+  }
+}
+
 function emitMockOrder () {
   const cowTime = Math.floor(Math.random() * WAITING_FOR_COW_TIME)
 
@@ -38,9 +58,7 @@ function emitMockOrder () {
     creationDate: new Date(new Date().getTime() - cowTime).toISOString()
     // creationDate: new Date(new Date().getTime() - 1000).toISOString()
   }
-  const { uid, kind, creationDate, sellToken, buyToken, sellAmount, buyAmount } = newOrder
-  console.log('🤑 Push Order', { uid, kind, creationDate, sellToken, buyToken, sellAmount, buyAmount })
-  io.emit('NEW_ORDER', newOrder)
+  emitOrder(newOrder)
 }
 
 function emitRandomMockOrder () {
@@ -53,7 +71,23 @@ function emitRandomMockOrder () {
 
 async function pushNewOrders () {
   const orders = await getSolvableOrders()
-  console.log('Orders: ', orders)
+  for (const order of orders) {
+    const { uid } = order
+    if (!knownOrders.has(uid)) {
+      knownOrders.add(uid)
+      emitOrder(order)
+
+      // No need to keep the orders linger than their expiration date
+      const expirationDate = new Date(order.validTo * 1000)
+      const timeUntilExpiration = expirationDate.getTime() - Date.now()
+      console.log('Time for expiration', expirationDate, timeUntilExpiration)
+      setTimeout(() => {
+        // Remove expired orders from UID cache
+        console.log('⏱ Order Expired: Removing it from UID cache', order.uid)
+        knownOrders.delete(order.uid)
+      }, timeUntilExpiration)
+    }
+  }
 }
 
 async function watchAndEmit () {

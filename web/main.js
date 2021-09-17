@@ -1,6 +1,6 @@
 console.log('🐮🛹 C O W    S K A T E')
-// const WAITING_FOR_COW_TIME = 30000
-const WAITING_FOR_COW_TIME = 5000
+const WAITING_FOR_COW_TIME = 30000
+// const WAITING_FOR_COW_TIME = 5000
 
 // eslint-disable-next-line no-undef
 const socket = io()
@@ -71,7 +71,8 @@ async function createNewOrder (order) {
   skateableDiv.appendChild(cowDiv)
   rowDiv.appendChild(skateableDiv)
   rowDiv.appendChild(tradeButton)
-  cowsDiv.insertBefore(rowDiv, cowsDiv.firstChild)
+  // cowsDiv.insertBefore(rowDiv, cowsDiv.firstChild)
+  cowsDiv.appendChild(rowDiv)
 
   tradeButton.addEventListener('click', () => {
     alert('Trade order ' + JSON.stringify(order.uid))
