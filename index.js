@@ -10,13 +10,17 @@ const order = require('./data/order.json')
 
 const IS_MOCK = process.env.MOCK === 'true'
 const LOAD_ORDERS_WAIT_MS = 2000
-const WAITING_FOR_COW_TIME = 30000
-// const WAITING_FOR_COW_TIME = 5000
+// const WAITING_FOR_COW_TIME = 30000
+const WAITING_FOR_COW_TIME = 5000
 
 const knownOrders = new Set()
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '/web/index.html'))
+})
+
+app.get('/api/wait-for-cow-time', (_req, res) => {
+  res.json(WAITING_FOR_COW_TIME)
 })
 
 app.use(express.static('web'))
@@ -40,8 +44,9 @@ function getCowTimeMs (order) {
 
 function emitOrder (order) {
   const cowTimeMs = getCowTimeMs(order)
-  const { uid, kind, creationDate, sellToken, buyToken, sellAmount, buyAmount } = order
-  const orderInfo = { uid, kind, creationDate, sellToken, buyToken, sellAmount, buyAmount }
+  // const { uid, kind, creationDate, sellToken, buyToken, sellAmount, buyAmount } = order
+  // const orderInfo = { uid, kind, creationDate, sellToken, buyToken, sellAmount, buyAmount }
+  const orderInfo = order.uid
   if (cowTimeMs > 0) {
     console.log('🤑 Push Order', orderInfo)
     io.emit('NEW_ORDER', order)
@@ -95,9 +100,15 @@ async function watchAndEmit () {
   }, LOAD_ORDERS_WAIT_MS)
 }
 
-if (IS_MOCK) {
-  emitMockOrder()
-  emitRandomMockOrder()
-} else {
-  watchAndEmit()
+function init () {
+  if (IS_MOCK) {
+    console.log('🥸 Mock')
+    emitMockOrder()
+    emitRandomMockOrder()
+  } else {
+    console.log('🐮 Watch for new orders!')
+    watchAndEmit()
+  }
 }
+
+init()
