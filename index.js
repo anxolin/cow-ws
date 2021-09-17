@@ -5,6 +5,11 @@ const http = require('http')
 const server = http.createServer(app)
 const { Server } = require('socket.io')
 const io = new Server(server)
+const { getSolvableOrders } = require('./api/gnosisProtocol')
+const order = require('./data/order.json')
+
+const IS_MOCK = process.env.MOCK === 'true'
+const LOAD_ORDERS_WAIT_MS = 2000
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '/web/index.html'))
@@ -23,25 +28,38 @@ server.listen(3000, () => {
   console.log('🐮🛹 Listening on *:3000')
 })
 
-function emitEvent () {
-  const order = {
-    uuid: '0x3e7b0819ee99a311ab1ad47844057237c80568013065bcc03e972bc1b70eaad7424a46612794dbb8000194937834250dc723ffa56091050b',
-    price: '3010',
-    side: 'sell',
-    sellToken: '0x1',
-    buyToken: '0x2'
+function emitMockOrder () {
+  const newOrder = {
+    ...order,
+    creationDate: new Date().toISOString()
   }
-  console.log('🤑 New order')
-  io.emit('NEW_ORDER', order)
+  const { uid, kind, creationDate, sellToken, buyToken, sellAmount, buyAmount } = newOrder
+  console.log('🤑 Push Order', { uid, kind, creationDate, sellToken, buyToken, sellAmount, buyAmount })
+  io.emit('NEW_ORDER', newOrder)
 }
 
-function emitRandom () {
-  const delay = Math.floor(Math.random() * 3000)
+function emitRandomMockOrder () {
+  const delayMs = Math.floor(Math.random() * 3000)
   setTimeout(() => {
-    emitEvent()
-    emitRandom()
-  }, delay)
+    emitMockOrder()
+    emitRandomMockOrder()
+  }, delayMs)
 }
 
-emitEvent()
-emitRandom()
+async function pushNewOrders () {
+  const orders = await getSolvableOrders()
+  console.log('Orders: ', orders)
+}
+
+async function watchAndEmit () {
+  setTimeout(() => {
+    pushNewOrders().catch(console.error).finally(watchAndEmit)
+  }, LOAD_ORDERS_WAIT_MS)
+}
+
+if (IS_MOCK) {
+  emitMockOrder()
+  emitRandomMockOrder()
+} else {
+  watchAndEmit()
+}
