@@ -1,6 +1,6 @@
-console.log('🐮🛹 C O W    S K A T E')
-const WAITING_FOR_COW_TIME = 30000
-// const WAITING_FOR_COW_TIME = 5000
+console.log('🐮🛹 C O W')
+// const WAITING_FOR_COW_TIME = 30000
+const WAITING_FOR_COW_TIME = 5000
 
 // eslint-disable-next-line no-undef
 const socket = io()
@@ -14,7 +14,7 @@ function delay (ms) {
   return new Promise(resolve => setTimeout(() => resolve(), ms))
 }
 
-function getCowTimeMs (order) {
+function getRemainingCowTimeMs (order) {
   const creationDate = new Date(order.creationDate)
   const cowTimeMs = (creationDate.getTime() - Date.now()) + WAITING_FOR_COW_TIME
   return cowTimeMs >= 0 ? cowTimeMs : 0
@@ -32,14 +32,7 @@ function resetIfNoOrders () {
   }
 }
 
-async function createNewOrder (order) {
-  // If theres no orders. Empty message
-  resetIfNoOrders()
-  numOrders++
-
-  let cowTime = getCowTimeMs(order)
-  console.log('cowTime', cowTime)
-
+function createRowDiv (order, remainingCowTime) {
   const rowDiv = document.createElement('div')
   rowDiv.className = 'row'
 
@@ -50,12 +43,12 @@ async function createNewOrder (order) {
   // Cow
   const cowDiv = document.createElement('div')
   cowDiv.className = 'cow'
-  cowDiv.style.animationDuration = cowTime + 'ms'
+  cowDiv.style.animationDuration = remainingCowTime + 'ms'
 
   // Countdown
   const countdown = document.createElement('div')
   countdown.className = 'countdown'
-  countdown.innerText = Math.ceil(cowTime / 1000)
+  countdown.innerText = Math.ceil(remainingCowTime / 1000)
 
   // Trolley
   const trolley = document.createElement('div')
@@ -71,17 +64,9 @@ async function createNewOrder (order) {
   const tradeButton = document.createElement('button')
   tradeButton.className = 'tradeButton'
   tradeButton.innerText = 'Trade NOW!'
-
-  // Start the countdown
-  const interval = setInterval(() => {
-    cowTime = getCowTimeMs(order)
-    countdown.innerText = Math.ceil(cowTime / 1000)
-    console.log('interval', cowTime)
-
-    if (cowTime <= 0) {
-      clearInterval(interval)
-    }
-  }, 500)
+  tradeButton.addEventListener('click', () => {
+    alert('Trade order ' + JSON.stringify(order.uid))
+  })
 
   // Add elements
   cowDiv.appendChild(countdown)
@@ -89,14 +74,32 @@ async function createNewOrder (order) {
   skateableDiv.appendChild(cowDiv)
   rowDiv.appendChild(skateableDiv)
   rowDiv.appendChild(tradeButton)
+
+  return [rowDiv, countdown]
+}
+
+async function createNewOrder (order) {
+  // If theres no orders. Empty message
+  resetIfNoOrders()
+  numOrders++
+
+  let remainingCowTime = getRemainingCowTimeMs(order)
+
+  const [rowDiv, countdown] = createRowDiv(order, remainingCowTime)
   widgetDiv.appendChild(rowDiv)
 
-  tradeButton.addEventListener('click', () => {
-    alert('Trade order ' + JSON.stringify(order.uid))
-  })
+  // Start the countdown
+  const interval = setInterval(() => {
+    remainingCowTime = getRemainingCowTimeMs(order)
+    countdown.innerText = Math.ceil(remainingCowTime / 1000)
+
+    if (remainingCowTime <= 0) {
+      clearInterval(interval)
+    }
+  }, 500)
 
   // Wait for animations and destroy item
-  await delay(cowTime) // wait for skate animation
+  await delay(remainingCowTime) // wait for skate animation
   rowDiv.classList.add('backflip')
   await delay(300) // wait for backflip animation
   rowDiv.classList.add('expired')
