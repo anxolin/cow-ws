@@ -72,6 +72,10 @@ async function createNewOrder (order) {
   rowDiv.appendChild(tradeButton)
   cowsDiv.insertBefore(rowDiv, cowsDiv.firstChild)
 
+  tradeButton.addEventListener('click', () => {
+    alert('Trade order ' + JSON.stringify(order.uid))
+  })
+
   // Wait for animations and destroy item
   await delay(cowTime) // wait for skate animation
   rowDiv.classList.add('backflip')
