@@ -5,7 +5,7 @@ const WAITING_FOR_COW_TIME = 30000
 const socket = io()
 window.socket = socket
 
-const cowContainer = document.getElementById('cow-container')
+const cowsDiv = document.getElementById('cow-container')
 
 function delay (ms) {
   return new Promise(resolve => setTimeout(() => resolve(), ms))
@@ -21,19 +21,22 @@ async function createNewOrder (order) {
   let cowTime = getCowTimeMs(order)
   console.log('cowTime', cowTime)
 
-  // Item
-  const item = document.createElement('div')
-  item.className = 'item'
+  const rowDiv = document.createElement('div')
+  rowDiv.className = 'row'
+
+  // Skateable div
+  const skateableDiv = document.createElement('div')
+  skateableDiv.className = 'skateable'
 
   // Cow
-  const cow = document.createElement('div')
-  cow.className = 'cow'
-  cow.style.animationDuration = cowTime + 'ms'
+  const cowDiv = document.createElement('div')
+  cowDiv.className = 'cow'
+  cowDiv.style.animationDuration = cowTime + 'ms'
 
   // Countdown
   const countdown = document.createElement('div')
   countdown.className = 'countdown'
-  countdown.innerHTML = Math.ceil(cowTime / 1000)
+  countdown.innerText = Math.ceil(cowTime / 1000)
 
   // Trolley
   const trolley = document.createElement('div')
@@ -43,13 +46,17 @@ async function createNewOrder (order) {
 <div class="price">3,005 DAI per WETH</div>
 <div class="wheel1"></div>
 <div class="wheel2"/></div>
-<div class="towbar"/></div>
-`
+<div class="towbar"/></div>`
+
+  // Trolley
+  const tradeButton = document.createElement('button')
+  tradeButton.className = 'tradeButton'
+  tradeButton.innerText = 'Trade NOW!'
 
   // Start the countdown
   const interval = setInterval(() => {
     cowTime = getCowTimeMs(order)
-    countdown.innerHTML = Math.ceil(cowTime / 1000)
+    countdown.innerText = Math.ceil(cowTime / 1000)
     console.log('interval', cowTime)
 
     if (cowTime <= 0) {
@@ -58,18 +65,20 @@ async function createNewOrder (order) {
   }, 500)
 
   // Add elements
-  cow.appendChild(countdown)
-  cow.appendChild(trolley)
-  item.appendChild(cow)
-  cowContainer.insertBefore(item, cowContainer.firstChild)
+  cowDiv.appendChild(countdown)
+  cowDiv.appendChild(trolley)
+  skateableDiv.appendChild(cowDiv)
+  rowDiv.appendChild(skateableDiv)
+  rowDiv.appendChild(tradeButton)
+  cowsDiv.insertBefore(rowDiv, cowsDiv.firstChild)
 
   // Wait for animations and destroy item
   await delay(cowTime) // wait for skate animation
-  item.classList.add('backflip')
+  rowDiv.classList.add('backflip')
   await delay(300) // wait for backflip animation
-  item.classList.add('expired')
+  rowDiv.classList.add('expired')
   await delay(1000)
-  item.remove() // destroy item
+  rowDiv.remove() // destroy item
   clearInterval(interval)
 }
 

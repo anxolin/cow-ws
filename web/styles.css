@@ -8,7 +8,33 @@ body {
   margin: 0 auto;
 }
 
-.item {
+.row {
+  position: relative;
+}
+
+.tradeButton {
+  position: absolute;
+  top: 0;  
+  right: -100px;
+  width: 100px;
+  background-color: #4CAF50; /* Green */
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 18px;
+  height: 100%;
+  line-height: 1.5em;
+  cursor: pointer;
+}
+
+.tradeButton:hover {
+  background-color: #238627;
+}
+
+.skateable {
   border-top: 1px solid;
   border-bottom: 1px solid;
   position: relative;
@@ -104,6 +130,7 @@ body {
   width: 46px;
   height: 7px;
 }
+
 
 
 
