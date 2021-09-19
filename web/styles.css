@@ -55,13 +55,13 @@ h1 em {
 }
 
 .cow {
-  width: 100px;
+  width: 91px;
   height: 85px;
   position: absolute;
   animation-name: skate;
   /* animation-duration: 5s; / * TODO: Inject: time elpapsed * / */
   animation-timing-function: linear;
-  background-image: url("./cow.jpg");
+  background-image: url("./cow.gif");
   bottom: 0px;
   right: 0%;
 }
@@ -153,7 +153,7 @@ h1 em {
   background-color: #5a5a5a;
   display: block;
   height: 7px;
-  width: 31px;
+  width: 36px;
   left: 173px;
 }
 

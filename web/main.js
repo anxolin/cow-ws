@@ -7,7 +7,7 @@ const socket = io()
 window.socket = socket
 
 // State
-let waitForCowTime
+let WAIT_FOR_COW_TIME // constant, loaded from API
 let numOrders = 0
 
 // References
@@ -24,7 +24,8 @@ async function getWaitForCowTime () {
 
 function getRemainingCowTimeMs (order) {
   const creationDate = new Date(order.creationDate)
-  const cowTimeMs = (creationDate.getTime() - Date.now()) + waitForCowTime
+  const timeSinceCreation = new Date() - creationDate
+  const cowTimeMs = WAIT_FOR_COW_TIME - timeSinceCreation
   return cowTimeMs >= 0 ? cowTimeMs : 0
 }
 
@@ -61,7 +62,7 @@ function createRowDiv (order, remainingCowTime) {
 
   // Trolley
   const isCounterOrderSell = kind !== 'sell'
-  const counterOrders = {
+  const counterOrder = {
     kind: isCounterOrderSell ? 'sell' : 'buy',
     // TODO: add slippage!
     sellAmount: buyAmount,
@@ -72,14 +73,14 @@ function createRowDiv (order, remainingCowTime) {
     buyTokenLabel: 'WETH',
     sellTokenLabel: 'DAI'
   }
-  const orderAmount = isCounterOrderSell ? counterOrders.sellAmount : counterOrders.buyAmount
-  const orderToken = isCounterOrderSell ? counterOrders.sellTokenLabel : counterOrders.buyTokenLabel
+  const orderAmount = isCounterOrderSell ? counterOrder.sellAmount : counterOrder.buyAmount
+  const orderToken = isCounterOrderSell ? counterOrder.sellTokenLabel : counterOrder.buyTokenLabel
   const price = parseInt(sellAmount) / parseInt(buyAmount)
   const trolley = document.createElement('div')
   trolley.className = 'trolley'
   trolley.innerHTML = `\
-<div class="trade">${counterOrders.kind} ${orderAmount.toFixed(4)} ${orderToken}</div>
-<div class="price"><strong>${price.toFixed(4)}</strong> ${counterOrders.buyTokenLabel} per ${counterOrders.sellTokenLabel}</div>
+<div class="trade">${counterOrder.kind} ${orderAmount.toFixed(4)} ${orderToken}</div>
+<div class="price"><strong>${price.toFixed(4)}</strong> ${counterOrder.buyTokenLabel} per ${counterOrder.sellTokenLabel}</div>
 <div class="wheel1"></div>
 <div class="wheel2"/></div>
 <div class="towbar"/></div>`
@@ -89,7 +90,32 @@ function createRowDiv (order, remainingCowTime) {
   tradeButton.className = 'tradeButton'
   tradeButton.innerText = 'Trade NOW!'
   tradeButton.addEventListener('click', () => {
-    alert('Trade order ' + JSON.stringify(uid))
+    console.log('Trade order ', uid, order)
+
+    const { kind, buyToken, sellToken, buyAmount, sellAmount } = order
+
+    window.signAndPostOrder({
+      signingScheme: 'eip712',
+      kind,
+      buyToken,
+      sellToken,
+      buyAmount,
+      sellAmount,
+      // receiver,
+      appData: '', // TODO: Creage one for Cow
+      // feeAmount,
+      partiallyFillable: false
+      // sellTokenBalance, // TODO:
+      // buyTokenBalance // TODO:
+    })
+
+    // 'kind',
+    // 'signingScheme',
+
+    // 'feeAmount',
+    // 'partiallyFillable',
+    // 'sellTokenBalance',
+    // 'buyTokenBalance'
   })
 
   // Add elements
@@ -108,6 +134,7 @@ async function createNewOrder (order) {
   numOrders++
 
   let remainingCowTime = getRemainingCowTimeMs(order)
+  console.log('Add new CoW order, with remaining time ', remainingCowTime / 1000, 'seconds')
 
   const [rowDiv, countdown] = createRowDiv(order, remainingCowTime)
   widgetDiv.appendChild(rowDiv)
@@ -124,22 +151,22 @@ async function createNewOrder (order) {
 
   // Wait for animations and destroy item
   await delay(remainingCowTime) // wait for skate animation
-  // rowDiv.classList.add('backflip')
-  // await delay(300) // wait for backflip animation
-  // rowDiv.classList.add('expired')
-  // await delay(1000)
-  // rowDiv.remove() // destroy item
+  rowDiv.classList.add('backflip')
+  await delay(300) // wait for backflip animation
+  rowDiv.classList.add('expired')
+  await delay(1000)
+  rowDiv.remove() // destroy item
   clearInterval(interval)
 
   // If there's no more orders left, we show a message
-  // numOrders--
-  // showNoOrdersText()
+  numOrders--
+  showNoOrdersText()
 }
 
 async function init () {
-  waitForCowTime = await getWaitForCowTime()
+  WAIT_FOR_COW_TIME = await getWaitForCowTime()
   console.log('Using CoW API base Url: ', BASE_URL)
-  console.log(`Orders will work ${waitForCowTime} for a CoW`)
+  console.log(`Orders will work ${WAIT_FOR_COW_TIME} for a CoW`)
 
   showNoOrdersText()
 

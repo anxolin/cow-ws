@@ -10,31 +10,10 @@ const order = require('./data/order.json')
 
 const IS_MOCK = process.env.MOCK === 'true'
 const LOAD_ORDERS_WAIT_MS = 2000
-// const WAITING_FOR_COW_TIME = 30000
-const WAITING_FOR_COW_TIME = 5000
+const WAITING_FOR_COW_TIME = 30000
+// const WAITING_FOR_COW_TIME = 5000
 
 const knownOrders = new Set()
-
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '/web/index.html'))
-})
-
-app.get('/api/wait-for-cow-time', (_req, res) => {
-  res.json(WAITING_FOR_COW_TIME)
-})
-
-app.use(express.static('web'))
-
-io.on('connection', (socket) => {
-  console.log('🐮 A user connected')
-  socket.on('disconnect', () => {
-    console.log('👋 A user disconnected')
-  })
-})
-
-server.listen(3000, () => {
-  console.log('🐮🛹 Listening on *:3000')
-})
 
 function getCowTimeMs (order) {
   const creationDate = new Date(order.creationDate)
@@ -55,26 +34,35 @@ function emitOrder (order) {
   }
 }
 
+// let mockOrdersCount = 0
 function emitMockOrder () {
-  const cowTime = Math.floor(Math.random() * WAITING_FOR_COW_TIME)
+  // mockOrdersCount++
+  // if (mockOrdersCount > 2) {
+  //   return
+  // }
+
   const isSellOrder = Math.random() < 0.5
   const sellAmount = Math.random() * 5000
   const buyAmount = Math.random() * 10
+  const randomTimeSinceCreation = Math.floor(Math.random() * WAITING_FOR_COW_TIME * 0.75)
+  const creationDate = new Date(new Date().getTime() - randomTimeSinceCreation).toISOString()
+  console.log('Create a fake CoW order with remaining CoW time for order', randomTimeSinceCreation / 1000, 'seconds. Create time: ', creationDate)
 
   const newOrder = {
     ...order,
     kind: isSellOrder ? 'sell' : 'buy',
-    creationDate: new Date(new Date().getTime() - cowTime).toISOString(),
+    creationDate,
     sellAmount,
     buyAmount
-    // creationDate: new Date(new Date().getTime() - 1000).toISOString()
   }
   emitOrder(newOrder)
 }
 
 function emitRandomMockOrder () {
   emitMockOrder()
-  const delayMs = Math.floor(Math.random() * WAITING_FOR_COW_TIME * 0.70)
+  const delayMs = Math.floor(Math.random() * WAITING_FOR_COW_TIME * 0.2)
+  console.log('Emit next random CoW order in ', delayMs / 1000, 'seconds')
+  console.log()
   setTimeout(() => {
     emitRandomMockOrder()
   }, delayMs)
@@ -107,14 +95,34 @@ async function watchAndEmit () {
 }
 
 function init () {
-  if (IS_MOCK) {
-    console.log('🥸 Mock')
-    emitMockOrder()
-    emitRandomMockOrder()
-  } else {
-    console.log('🐮 Watch for new orders!')
-    watchAndEmit()
-  }
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '/web/index.html'))
+  })
+
+  app.get('/api/wait-for-cow-time', (_req, res) => {
+    res.json(WAITING_FOR_COW_TIME)
+  })
+
+  app.use(express.static('web'))
+
+  io.on('connection', (socket) => {
+    console.log('🐮 A user connected')
+    socket.on('disconnect', () => {
+      console.log('👋 A user disconnected')
+    })
+  })
+
+  server.listen(3000, () => {
+    console.log('🐮🛹 Listening on *:3000')
+
+    if (IS_MOCK) {
+      console.log('🥸 Mock')
+      emitRandomMockOrder()
+    } else {
+      console.log('🐮 Watch for new orders!')
+      watchAndEmit()
+    }
+  })
 }
 
 init()
