@@ -24,7 +24,7 @@ const ORDER_TYPE = [
 
 const NETWORKS = {
   1: 'mainnet',
-  4: 'rinkeby',
+  5: 'goerli',
   100: 'xdai'
 }
 
@@ -48,11 +48,11 @@ const provider = getProvider()
 const signer = provider.getSigner()
 const settlement = getSettlementContract(signer)
 
-function getProvider () {
+function getProvider() {
   return new ethers.providers.Web3Provider(window.ethereum)
 }
 
-function parseQuery (q) {
+function parseQuery(q) {
   const pairs = (q[0] === '?' ? q.substr(1) : q).split('&')
   const query = {}
   for (const pair of pairs) {
@@ -62,13 +62,13 @@ function parseQuery (q) {
   return query
 }
 
-function orderbookUrl (network) {
+function orderbookUrl(network) {
   const { orderbook } = parseQuery(window.location.search)
   const baseUrl = orderbook || `https://api.cow.fi/${network}`
   return `${baseUrl}/api/v1/orders`
 }
 
-function getSettlementContract (signer) {
+function getSettlementContract(signer) {
   return new ethers.Contract(
     '0x9008D19f58AAbD9eD0D60971565AA8510560ab41',
     [
@@ -77,7 +77,7 @@ function getSettlementContract (signer) {
     signer
   )
 }
-function getDomain (chainId) {
+function getDomain(chainId) {
   return {
     name: 'Gnosis Protocol',
     version: 'v2',
@@ -86,7 +86,7 @@ function getDomain (chainId) {
   }
 }
 
-function getSigningSchemaByName (signingSchemaApiName) {
+function getSigningSchemaByName(signingSchemaApiName) {
   const signingSchema = SIGNING_SCHEMAS.indexOf(signingSchemaApiName)
 
   if (signingSchema === -1) {
@@ -96,7 +96,7 @@ function getSigningSchemaByName (signingSchemaApiName) {
   return signingSchema
 }
 
-function validateOrder (order) {
+function validateOrder(order) {
   console.log('validateOrder', order)
   MANDATORY_ORDER_FIELDS.forEach(field => {
     if (order[field] === undefined) {
@@ -105,7 +105,7 @@ function validateOrder (order) {
   })
 }
 
-async function signOrder ({ chainId, rawOrder, account, signingScheme = 0 }) {
+async function signOrder({ chainId, rawOrder, account, signingScheme = 0 }) {
   // const { signingScheme } = rawOrder
 
   const domain = getDomain(chainId)
@@ -140,7 +140,7 @@ async function signOrder ({ chainId, rawOrder, account, signingScheme = 0 }) {
   return signature
 }
 
-async function connectWallet () {
+async function connectWallet() {
   const addresses = await ethereum.request({ method: 'eth_requestAccounts' })
 
   if (addresses.length === 0) {
@@ -150,7 +150,7 @@ async function connectWallet () {
   return addresses[0]
 }
 
-async function getChainId () {
+async function getChainId() {
   const { chainId } = await provider.getNetwork()
   const network = NETWORKS[chainId]
   if (network === undefined) {
@@ -160,7 +160,7 @@ async function getChainId () {
   return chainId
 }
 
-async function postSignedOrder ({ rawOrder, signature, account, chainId }) {
+async function postSignedOrder({ rawOrder, signature, account, chainId }) {
   const { signingScheme } = rawOrder
   const response = await fetch(
     orderbookUrl(network),
@@ -190,7 +190,7 @@ async function postSignedOrder ({ rawOrder, signature, account, chainId }) {
   return orderUid
 }
 
-async function signAndPostOrder ({ account, rawOrder, chainId }) {
+async function signAndPostOrder({ account, rawOrder, chainId }) {
   validateOrder(rawOrder)
 
   // Sign raw order
