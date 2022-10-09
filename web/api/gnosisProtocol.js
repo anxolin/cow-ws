@@ -20,7 +20,7 @@ const ORDER_TYPE = [
 
 const NETWORKS = {
   1: 'mainnet',
-  4: 'rinkeby',
+  5: 'goerli',
   100: 'xdai'
 }
 
@@ -60,7 +60,7 @@ function parseQuery (q) {
 
 function orderbookUrl (network) {
   const { orderbook } = parseQuery(window.location.search)
-  const baseUrl = orderbook || `https://protocol-${network}.dev.gnosisdev.com`
+  const baseUrl = orderbook || `https://barn.api.cow.fi/${network}`
   return `${baseUrl}/api/v1/orders`
 }
 
@@ -189,7 +189,7 @@ async function signAndPostOrder (order) {
   // Post order API
   const orderUid = postSignedOrder(order, signature, account)
 
-  alert(`https://protocol-explorer.dev.gnosisdev.com/orders/${orderUid}`)
+  alert(`https://explorer.cow.fi/orders/${orderUid}`)
 }
 
 window.signAndPostOrder = signAndPostOrder
