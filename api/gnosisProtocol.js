@@ -8,9 +8,9 @@ console.log('Using API base Url: ', BASE_URL)
 
 function getBaseUrl () {
   if (IS_DEV) {
-    return `https://protocol-rinkeby.${NETWORK}.gnosisdev.com`
+    return `https://barn.api.cow.fi/${NETWORK}`
   } else {
-    return `https://protocol-${NETWORK}.gnosis.io`
+    return `https://api.cow.fi/${NETWORK}`
   }
 }
 

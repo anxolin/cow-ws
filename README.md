@@ -15,9 +15,9 @@ You can specify the environment between development or production. This mainly c
 NODE_ENV=development yarn start
 ```
 
-Additionally, you can provide the network among one of these ones: `mainnet` (default), `rinkeby`, `xdai`.
+Additionally, you can provide the network among one of these ones: `mainnet` (default), `goerli`, `xdai`.
 
 ```bash
-NETWORK=rinkeby yarn start
+NETWORK=goerli yarn start
 ```
 
