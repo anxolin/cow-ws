@@ -1,3 +1,5 @@
+const EXPLORER_URL = 'https://explorer.cow.fi/orders'
+
 // Globals
 // eslint-disable-next-line no-undef
 const ethers = window.ethers
@@ -26,7 +28,7 @@ const NETWORKS = {
 
 const MANDATORY_ORDER_FIELDS = [
   'kind',
-  'signingScheme',
+  // 'signingScheme',
   'sellToken',
   'sellAmount',
   'buyToken',
@@ -44,11 +46,11 @@ const provider = getProvider()
 const signer = provider.getSigner()
 const settlement = getSettlementContract(signer)
 
-function getProvider () {
+function getProvider() {
   return new ethers.providers.Web3Provider(window.ethereum)
 }
 
-function parseQuery (q) {
+function parseQuery(q) {
   const pairs = (q[0] === '?' ? q.substr(1) : q).split('&')
   const query = {}
   for (const pair of pairs) {
@@ -58,13 +60,28 @@ function parseQuery (q) {
   return query
 }
 
-function orderbookUrl (network) {
-  const { orderbook } = parseQuery(window.location.search)
-  const baseUrl = orderbook || `https://barn.api.cow.fi/${network}`
-  return `${baseUrl}/api/v1/orders`
+function getNetwokName(chainId) {
+  switch (chainId) {
+    case 1:
+      return 'mainnet'
+    case 5:
+      return 'goerli'
+    case 100:
+      return 'xdai'
+
+    default:
+      throw new Error('Unknown ChainId: ' + chainId)
+  }
 }
 
-function getSettlementContract (signer) {
+function getApiUrl(chainId) {
+  const { orderbook } = parseQuery(window.location.search)
+  const network = getNetwokName(chainId)
+  const baseUrl = orderbook || `https://api.cow.fi/${network}`
+  return `${baseUrl}/api/v1`
+}
+
+function getSettlementContract(signer) {
   return new ethers.Contract(
     '0x9008D19f58AAbD9eD0D60971565AA8510560ab41',
     [
@@ -73,7 +90,7 @@ function getSettlementContract (signer) {
     signer
   )
 }
-function getDomain (chainId) {
+function getDomain(chainId) {
   return {
     name: 'Gnosis Protocol',
     version: 'v2',
@@ -82,7 +99,8 @@ function getDomain (chainId) {
   }
 }
 
-function validateOrder (order) {
+function validateOrder(order) {
+  console.log('validateOrder', order)
   MANDATORY_ORDER_FIELDS.forEach(field => {
     if (order[field] === undefined) {
       throw new Error(`The order must specify the "${field}"`)
@@ -90,32 +108,32 @@ function validateOrder (order) {
   })
 }
 
-async function signOrder (chainId, order, account) {
-  const { signingScheme } = order
+async function signOrder({ chainId, rawOrder, account, signingScheme = 0 }) {
+  // const { signingScheme } = rawOrder
 
   const domain = getDomain(chainId)
 
   let signature
   switch (signingScheme) {
-    case 'eip712':
+    case 0: // eip712
       signature = await signer._signTypedData(
         domain,
         { Order: ORDER_TYPE },
-        order
+        rawOrder
       )
       break
-    case 'ethsign':
+    case 1: // 'ethsign'
       signature = await signer.signMessage(
         ethers.utils.arrayify(
           ethers.utils._TypedDataEncoder.hash(
             domain,
             { Order: ORDER_TYPE },
-            order
+            rawOrder
           )
         )
       )
       break
-    case 'presign':
+    case 2: // 'presign'
       signature = account.toLowerCase()
       break
     default:
@@ -125,16 +143,17 @@ async function signOrder (chainId, order, account) {
   return signature
 }
 
-async function connectWallet () {
-  const addresses = ethereum.request({ method: 'eth_requestAccounts' })
+async function connectWallet() {
+  const addresses = await ethereum.request({ method: 'eth_requestAccounts' })
 
   if (addresses.length === 0) {
     throw new Error('No account addresses has been returned by the wallet')
   }
+
   return addresses[0]
 }
 
-async function validateNetwork () {
+async function getChainId() {
   const { chainId } = await provider.getNetwork()
   const network = NETWORKS[chainId]
   if (network === undefined) {
@@ -144,20 +163,40 @@ async function validateNetwork () {
   return chainId
 }
 
-async function postSignedOrder (order, signature, account) {
-  const { signingScheme } = order
+async function getQuote(quoteParameters, chainId) {
+  const quotePath = getApiUrl(chainId) + '/quote'
   const response = await fetch(
-    orderbookUrl(network),
+    quotePath,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(quoteParameters)
+    }
+  )
+  const body = await response.json()
+  if (!response.ok) {
+    throw new Error(body.description)
+  }
+
+  return body
+}
+
+async function postSignedOrder({ rawOrder, signature, account, chainId }) {
+  const signedOrdersPath = getApiUrl(chainId) + '/orders'
+  const response = await fetch(
+    signedOrdersPath,
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        ...order,
+        ...rawOrder,
         signature,
-        signingScheme,
-        from: account
+        from: account,
+        signingScheme: 'eip712'
       })
     }
   )
@@ -167,29 +206,30 @@ async function postSignedOrder (order, signature, account) {
   }
   const orderUid = body
 
-  if (signingScheme === 'presign') {
-    await settlement.setPreSignature(orderUid, true)
-  }
+  // if (signingScheme === 'presign') {
+  //   await settlement.setPreSignature(orderUid, true)
+  // }
 
   return orderUid
 }
 
-async function signAndPostOrder (order) {
-  validateOrder(order)
+async function signAndPostOrder({ account, rawOrder, chainId }) {
+  validateOrder(rawOrder)
 
-  // Connect wallet
-  const account = await connectWallet()
-
-  // Validate network
-  const chainId = await validateNetwork()
-
-  // Sign order
-  const signature = signOrder(chainId, order, account)
+  // Sign raw order
+  console.log('Sign', rawOrder)
+  const signature = await signOrder({ chainId, rawOrder, account })
 
   // Post order API
-  const orderUid = postSignedOrder(order, signature, account)
+  const orderUid = await postSignedOrder({ rawOrder, signature, account, chainId })
 
-  alert(`https://explorer.cow.fi/orders/${orderUid}`)
+  const explorerUrl = `${EXPLORER_URL}/orders/${orderUid}`
+  alert(explorerUrl)
+  console.log('explorerUrl', explorerUrl)
 }
 
+window.getQuote = getQuote
 window.signAndPostOrder = signAndPostOrder
+window.connectWallet = connectWallet
+window.getChainId = getChainId
+window.getSigningSchemaByName = getSigningSchemaByName
