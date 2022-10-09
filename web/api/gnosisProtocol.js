@@ -5,8 +5,6 @@ const EXPLORER_URL = 'https://explorer.cow.fi/orders'
 const ethers = window.ethers
 const ethereum = window.ethereum
 
-const SIGNING_SCHEMAS = ['eip712', 'ethsign', 'eip1271', 'presign']
-
 const ORDER_TYPE = [
   { name: 'sellToken', type: 'address' },
   { name: 'buyToken', type: 'address' },
@@ -62,10 +60,25 @@ function parseQuery(q) {
   return query
 }
 
-function orderbookUrl(network) {
+function getNetwokName(chainId) {
+  switch (chainId) {
+    case 1:
+      return 'mainnet'
+    case 5:
+      return 'goerli'
+    case 100:
+      return 'xdai'
+
+    default:
+      throw new Error('Unknown ChainId: ' + chainId)
+  }
+}
+
+function getApiUrl(chainId) {
   const { orderbook } = parseQuery(window.location.search)
+  const network = getNetwokName(chainId)
   const baseUrl = orderbook || `https://api.cow.fi/${network}`
-  return `${baseUrl}/api/v1/orders`
+  return `${baseUrl}/api/v1`
 }
 
 function getSettlementContract(signer) {
@@ -84,16 +97,6 @@ function getDomain(chainId) {
     chainId,
     verifyingContract: '0x9008D19f58AAbD9eD0D60971565AA8510560ab41'
   }
-}
-
-function getSigningSchemaByName(signingSchemaApiName) {
-  const signingSchema = SIGNING_SCHEMAS.indexOf(signingSchemaApiName)
-
-  if (signingSchema === -1) {
-    throw new Error('Unknown signing schema: ' + signingSchemaApiName)
-  }
-
-  return signingSchema
 }
 
 function validateOrder(order) {
@@ -160,10 +163,30 @@ async function getChainId() {
   return chainId
 }
 
-async function postSignedOrder({ rawOrder, signature, account, chainId }) {
-  const { signingScheme } = rawOrder
+async function getQuote(quoteParameters, chainId) {
+  const quotePath = getApiUrl(chainId) + '/quote'
   const response = await fetch(
-    orderbookUrl(network),
+    quotePath,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(quoteParameters)
+    }
+  )
+  const body = await response.json()
+  if (!response.ok) {
+    throw new Error(body.description)
+  }
+
+  return body
+}
+
+async function postSignedOrder({ rawOrder, signature, account, chainId }) {
+  const signedOrdersPath = getApiUrl(chainId) + '/orders'
+  const response = await fetch(
+    signedOrdersPath,
     {
       method: 'POST',
       headers: {
@@ -172,8 +195,8 @@ async function postSignedOrder({ rawOrder, signature, account, chainId }) {
       body: JSON.stringify({
         ...rawOrder,
         signature,
-        signingScheme,
-        from: account
+        from: account,
+        signingScheme: 'eip712'
       })
     }
   )
@@ -183,9 +206,9 @@ async function postSignedOrder({ rawOrder, signature, account, chainId }) {
   }
   const orderUid = body
 
-  if (signingScheme === 'presign') {
-    await settlement.setPreSignature(orderUid, true)
-  }
+  // if (signingScheme === 'presign') {
+  //   await settlement.setPreSignature(orderUid, true)
+  // }
 
   return orderUid
 }
@@ -205,6 +228,7 @@ async function signAndPostOrder({ account, rawOrder, chainId }) {
   console.log('explorerUrl', explorerUrl)
 }
 
+window.getQuote = getQuote
 window.signAndPostOrder = signAndPostOrder
 window.connectWallet = connectWallet
 window.getChainId = getChainId

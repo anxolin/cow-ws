@@ -247,8 +247,6 @@ let numOrders = 0
 // References
 const widgetDiv = document.getElementById('cowWidget')
 
-// TODO: Implement
-
 function getInfuraProvider(chainId) {
   let provider = infuraProviders[chainId]
 
@@ -319,10 +317,10 @@ async function connectAndPostOrder(order) {
   })
 }
 
-async function getCounterOrder(order, chainId) {
+async function getCounterOrder(order, account, chainId) {
   const { kind: kindOriginal, sellToken, buyToken, sellAmount: sellAmountOriginal, buyAmount: buyAmountOriginal, feeAmount } = order
 
-  let sellAmount, buyAmount, kind
+  let sellAmount, buyAmount, kind, amountParameter
   if (kindOriginal === 'sell') {
     // If Sell X for at least Y
     //    - Buy X for at most Y * (1+slippage)
@@ -332,6 +330,9 @@ async function getCounterOrder(order, chainId) {
       .mul(TEN_THOUSANDS + COUNTER_ORDER_SLIPPAGE_BIPS)
       .div(TEN_THOUSANDS)
       .toString()
+    amountParameter = {
+      buyAmountAfterFee: buyAmount
+    }
   } else {
     // If Buy X for at most Y
     //    - sell X for at least Y * (1-slippage)
@@ -341,26 +342,38 @@ async function getCounterOrder(order, chainId) {
       .mul(TEN_THOUSANDS - COUNTER_ORDER_SLIPPAGE_BIPS)
       .div(TEN_THOUSANDS)
       .toString()
+    amountParameter = {
+      sellAmountAfterFee: sellAmount
+    }
   }
 
   console.log({ kindOriginal, kind })
 
+  const rawOrder = {
+    signingScheme: 'eip712',
+    kind,
+    sellToken: buyToken,
+    buyToken: sellToken,
+    validTo: Math.ceil(Date.now() / 1000 + COUNTER_ORDER_DURATION_SECONDS),
+    appData: COUNTER_ORDER_APP_DATA, // TODO: Create one for Cow
+    partiallyFillable: false,
+    sellTokenBalance: 'erc20',
+    buyTokenBalance: 'erc20',
+    receiver: null // will be added later when connected
+  }
+
+  const quoteParams = {
+    ...rawOrder,
+    from: account,
+    sellAmountBeforeFee: sellAmount,
+    priceQuality: 'optimal',
+    ...amountParameter
+  }
+  console.log('Get quote with Params', quoteParams)
+  const { quote } = await window.getQuote(quoteParams, chainId)
+
   return {
-    rawOrder: {
-      // signingScheme: window.getSigningSchemaByName('eip712'),
-      kind,
-      sellToken: buyToken,
-      buyToken: sellToken,
-      sellAmount,
-      buyAmount,
-      validTo: Math.ceil(Date.now() / 1000 + COUNTER_ORDER_DURATION_SECONDS),
-      appData: COUNTER_ORDER_APP_DATA, // TODO: Create one for Cow
-      feeAmount, // TODO: Calculate fee amount required (call API)
-      partiallyFillable: false,
-      sellTokenBalance: 'erc20',
-      buyTokenBalance: 'erc20',
-      receiver: null // will be added later when connected
-    },
+    rawOrder: quote,
     buyToken: await getToken(buyToken, chainId),
     sellToken: await getToken(sellToken, chainId)
   }
@@ -414,7 +427,8 @@ function createTrolleyDiv(counterOrder) {
 async function createRowDiv(order, remainingCowTime, chainId) {
   console.log('Create row for order', order)
   const { uid } = order
-  const counterOrder = await getCounterOrder(order, chainId)
+  const account = await window.connectWallet()
+  const counterOrder = await getCounterOrder(order, account, chainId)
   console.log('Order', order)
   console.log('Counter order', counterOrder)
 
