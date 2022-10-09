@@ -5,9 +5,11 @@
   "license": "MIT",
   "scripts": {
     "web": "npx serve web",
-    "start": "node index"
+    "start": "DEBUG=ERROR-*,WARN-*,INFO-*,DEBUG-* node index"
   },
   "devDependencies": {
+    "debug": "^4.3.3",
+    "dotenv": "^16.0.0",
     "eslint": "^7.32.0",
     "eslint-config-standard": "^16.0.3",
     "eslint-plugin-import": "^2.24.2",

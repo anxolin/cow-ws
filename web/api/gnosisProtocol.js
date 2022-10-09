@@ -1,7 +1,11 @@
+const EXPLORER_URL = 'https://explorer.cow.fi/orders'
+
 // Globals
 // eslint-disable-next-line no-undef
 const ethers = window.ethers
 const ethereum = window.ethereum
+
+const SIGNING_SCHEMAS = ['eip712', 'ethsign', 'eip1271', 'presign']
 
 const ORDER_TYPE = [
   { name: 'sellToken', type: 'address' },
@@ -26,7 +30,7 @@ const NETWORKS = {
 
 const MANDATORY_ORDER_FIELDS = [
   'kind',
-  'signingScheme',
+  // 'signingScheme',
   'sellToken',
   'sellAmount',
   'buyToken',
@@ -60,7 +64,7 @@ function parseQuery (q) {
 
 function orderbookUrl (network) {
   const { orderbook } = parseQuery(window.location.search)
-  const baseUrl = orderbook || `https://protocol-${network}.dev.gnosisdev.com`
+  const baseUrl = orderbook || `https://api.cow.fi/${network}`
   return `${baseUrl}/api/v1/orders`
 }
 
@@ -82,7 +86,18 @@ function getDomain (chainId) {
   }
 }
 
+function getSigningSchemaByName (signingSchemaApiName) {
+  const signingSchema = SIGNING_SCHEMAS.indexOf(signingSchemaApiName)
+
+  if (signingSchema === -1) {
+    throw new Error('Unknown signing schema: ' + signingSchemaApiName)
+  }
+
+  return signingSchema
+}
+
 function validateOrder (order) {
+  console.log('validateOrder', order)
   MANDATORY_ORDER_FIELDS.forEach(field => {
     if (order[field] === undefined) {
       throw new Error(`The order must specify the "${field}"`)
@@ -90,32 +105,32 @@ function validateOrder (order) {
   })
 }
 
-async function signOrder (chainId, order, account) {
-  const { signingScheme } = order
+async function signOrder ({ chainId, rawOrder, account, signingScheme = 0 }) {
+  // const { signingScheme } = rawOrder
 
   const domain = getDomain(chainId)
 
   let signature
   switch (signingScheme) {
-    case 'eip712':
+    case 0: // eip712
       signature = await signer._signTypedData(
         domain,
         { Order: ORDER_TYPE },
-        order
+        rawOrder
       )
       break
-    case 'ethsign':
+    case 1: // 'ethsign'
       signature = await signer.signMessage(
         ethers.utils.arrayify(
           ethers.utils._TypedDataEncoder.hash(
             domain,
             { Order: ORDER_TYPE },
-            order
+            rawOrder
           )
         )
       )
       break
-    case 'presign':
+    case 2: // 'presign'
       signature = account.toLowerCase()
       break
     default:
@@ -126,15 +141,16 @@ async function signOrder (chainId, order, account) {
 }
 
 async function connectWallet () {
-  const addresses = ethereum.request({ method: 'eth_requestAccounts' })
+  const addresses = await ethereum.request({ method: 'eth_requestAccounts' })
 
   if (addresses.length === 0) {
     throw new Error('No account addresses has been returned by the wallet')
   }
+
   return addresses[0]
 }
 
-async function validateNetwork () {
+async function getChainId () {
   const { chainId } = await provider.getNetwork()
   const network = NETWORKS[chainId]
   if (network === undefined) {
@@ -144,8 +160,8 @@ async function validateNetwork () {
   return chainId
 }
 
-async function postSignedOrder (order, signature, account) {
-  const { signingScheme } = order
+async function postSignedOrder ({ rawOrder, signature, account, chainId }) {
+  const { signingScheme } = rawOrder
   const response = await fetch(
     orderbookUrl(network),
     {
@@ -154,7 +170,7 @@ async function postSignedOrder (order, signature, account) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        ...order,
+        ...rawOrder,
         signature,
         signingScheme,
         from: account
@@ -174,22 +190,22 @@ async function postSignedOrder (order, signature, account) {
   return orderUid
 }
 
-async function signAndPostOrder (order) {
-  validateOrder(order)
+async function signAndPostOrder ({ account, rawOrder, chainId }) {
+  validateOrder(rawOrder)
 
-  // Connect wallet
-  const account = await connectWallet()
-
-  // Validate network
-  const chainId = await validateNetwork()
-
-  // Sign order
-  const signature = signOrder(chainId, order, account)
+  // Sign raw order
+  console.log('Sign', rawOrder)
+  const signature = await signOrder({ chainId, rawOrder, account })
 
   // Post order API
-  const orderUid = postSignedOrder(order, signature, account)
+  const orderUid = await postSignedOrder({ rawOrder, signature, account, chainId })
 
-  alert(`https://protocol-explorer.dev.gnosisdev.com/orders/${orderUid}`)
+  const explorerUrl = `${EXPLORER_URL}/orders/${orderUid}`
+  alert(explorerUrl)
+  console.log('explorerUrl', explorerUrl)
 }
 
 window.signAndPostOrder = signAndPostOrder
+window.connectWallet = connectWallet
+window.getChainId = getChainId
+window.getSigningSchemaByName = getSigningSchemaByName

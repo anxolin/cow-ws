@@ -6,7 +6,7 @@ const BASE_URL = getBaseUrl()
 
 console.log('Using API base Url: ', BASE_URL)
 
-function getBaseUrl () {
+function getBaseUrl() {
   if (IS_DEV) {
     return `https://protocol-rinkeby.${NETWORK}.gnosisdev.com`
   } else {
@@ -14,11 +14,27 @@ function getBaseUrl () {
   }
 }
 
-async function getSolvableOrders () {
+async function getSolvableOrders() {
   const { data } = await axios.get(BASE_URL + '/api/v1/solvable_orders')
+
   return data
 }
 
+function getChainId(network) {
+  switch (network) {
+    case 'mainnet':
+      return 1
+    case 'goerli':
+      return 5
+    case 'xdai':
+      return 100
+
+    default:
+      throw new Error('Unknown Chain: ' + network)
+  }
+}
+
 module.exports = {
-  getSolvableOrders
+  getSolvableOrders,
+  chainId: getChainId(NETWORK)
 }

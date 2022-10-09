@@ -79,6 +79,29 @@ h1 em {
   transform: rotate(-180deg);
 }
 
+.expired .cow {
+  bottom: -100px;
+  transition: bottom 1s;
+  transform: rotate(-180deg);
+}
+
+.disappear{
+  animation-duration: 0.5s;
+  animation-timing-function: linear;
+  animation-name: shrink;
+  visibility: hidden;
+}
+
+@keyframes shrink {
+  from {
+    max-height: 122px;
+  }
+
+  to {
+    max-height: 0;
+  }
+}
+
 .countdown {
   color: #FFF;
   background-color: #FF6B6B;
@@ -162,10 +185,10 @@ h1 em {
 
 @keyframes skate {
   0% {
-    right: 100%;
+    right: 70%;
   }
   100% {
-    right: 0%; /* TODO: Inject: Percentage */
+    right: 0%; 
   }
 }
 
